@@ -58,6 +58,7 @@ class VecEnv(ABC):
 
     def __init__(self, num_envs: int, observation_space: gym.spaces.Space, action_space: gym.spaces.Space):
         self.num_envs = num_envs
+        print(self.num_envs)
         self.observation_space = observation_space
         self.action_space = action_space
 
