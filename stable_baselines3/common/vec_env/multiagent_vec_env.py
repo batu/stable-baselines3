@@ -21,9 +21,11 @@ class MultiAgentVecEnv(VecEnv):
         that return environments to vectorize
     """
 
-    def __init__(self, env_fns: Callable[[], gym.Env], agent_count):
+    def __init__(self, env_fns: Callable[[], gym.Env]):
         self.envs = [env_fns()]
         env = self.envs[0]
+        agent_count = len(env.reset())
+    
         VecEnv.__init__(self, agent_count, env.observation_space, env.action_space)
         print("num envs in multiagentvecenv", self.num_envs)
         obs_space = env.observation_space
@@ -93,7 +95,7 @@ class MultiAgentVecEnv(VecEnv):
     def _save_obs(self, env_idx: int, obs: VecEnvObs) -> None:
         for key in self.keys:
             if key is None:
-                self.buf_obs[key][env_idx] = obs
+                self.buf_obs[key][env_idx] = np.squeeze(obs)
             else:
                 self.buf_obs[key][env_idx] = obs[key]
 

@@ -216,7 +216,7 @@ class MonitorMulti(gym.Wrapper):
                 "Tried to reset an environment before done. If you want to allow early resets, "
                 "wrap your env with Monitor(env, path, allow_early_resets=True)"
             )
-        self.rewards = [[]] * 12
+        self.rewards = [[]] * 20
         self.needs_reset = False
         for key in self.reset_keywords:
             value = kwargs.get(key)
@@ -255,8 +255,8 @@ class MonitorMulti(gym.Wrapper):
                     self.logger.writerow(ep_info)
                     self.file_handler.flush()
                 info["episode"] = ep_info
-                self.rewards[idx] = []
-        self.total_steps += 1
+                self.rewards[idx].clear()
+            self.total_steps += 1
         return observations, rewards, dones, infos
 
     def close(self) -> None:
