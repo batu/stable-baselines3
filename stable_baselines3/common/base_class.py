@@ -405,6 +405,8 @@ class BaseAlgorithm(ABC):
         """
         if dones is None:
             dones = np.array([False] * len(infos))
+
+            
         for idx, info in enumerate(infos):
             maybe_ep_info = info.get("episode")
             maybe_is_success = info.get("is_success")

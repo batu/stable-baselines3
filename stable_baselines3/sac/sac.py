@@ -111,6 +111,7 @@ class SAC(OffPolicyAlgorithm):
             train_freq,
             gradient_steps,
             action_noise,
+            support_multi_env=True,
             policy_kwargs=policy_kwargs,
             tensorboard_log=tensorboard_log,
             verbose=verbose,

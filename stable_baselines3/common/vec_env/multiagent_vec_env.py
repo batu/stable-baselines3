@@ -43,7 +43,10 @@ class MultiAgentVecEnv(VecEnv):
 
     def step_wait(self) -> VecEnvStepReturn:
 
-        obses, rews, dones, infos = self.envs[0].step(self.actions)   
+        obses, rews, dones, infos = self.envs[0].step(self.actions)  
+        if rews.ndim == 0:
+            obses, rews, dones, infos = [obses], [rews], [dones], infos
+
         obses = np.squeeze(np.array(obses))   
         for env_idx in range(self.num_envs):
             obs, self.buf_rews[env_idx], self.buf_dones[env_idx], self.buf_infos[env_idx] = obses[env_idx], rews[env_idx], dones[env_idx], infos[env_idx] 

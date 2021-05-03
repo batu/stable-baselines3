@@ -126,6 +126,7 @@ class OffPolicyAlgorithm(BaseAlgorithm):
         self.gradient_steps = gradient_steps
         self.action_noise = action_noise
         self.optimize_memory_usage = optimize_memory_usage
+        self.num_agents = env.num_envs
 
         # Remove terminations (dones) that are due to time limit
         # see https://github.com/hill-a/stable-baselines/issues/863
@@ -313,7 +314,7 @@ class OffPolicyAlgorithm(BaseAlgorithm):
         # Select action randomly or according to policy
         if self.num_timesteps < learning_starts and not (self.use_sde and self.use_sde_at_warmup):
             # Warmup phase
-            unscaled_action = np.array([self.action_space.sample()])
+            unscaled_action = np.array([self.action_space.sample() for i in range(self.num_agents)])
         else:
             # Note: when using continuous actions,
             # we assume that the policy uses tanh to scale the action
@@ -373,6 +374,7 @@ class OffPolicyAlgorithm(BaseAlgorithm):
         reward: np.ndarray,
         done: np.ndarray,
         infos: List[Dict[str, Any]],
+        env_idx = None
     ) -> None:
         """
         Store transition in the replay buffer.
@@ -406,9 +408,14 @@ class OffPolicyAlgorithm(BaseAlgorithm):
         else:
             next_obs = new_obs_
 
-        replay_buffer.add(self._last_original_obs, next_obs, buffer_action, reward_, done)
+        if env_idx is not None:
+            replay_buffer.add(self._last_original_obs[env_idx], next_obs, buffer_action, reward_, done)
+            self._last_obs[env_idx] = new_obs
+        else:
+            replay_buffer.add(self._last_original_obs, next_obs, buffer_action, reward_, done)
+            self._last_obs = new_obs
 
-        self._last_obs = new_obs
+        
         # Save the unnormalized observation
         if self._vec_normalize_env is not None:
             self._last_original_obs = new_obs_
@@ -446,7 +453,7 @@ class OffPolicyAlgorithm(BaseAlgorithm):
         num_collected_steps, num_collected_episodes = 0, 0
 
         assert isinstance(env, VecEnv), "You must pass a VecEnv"
-        assert env.num_envs == 1, "OffPolicyAlgorithm only support single environment"
+        # assert env.num_envs == 1, "OffPolicyAlgorithm only support single environment"
         assert train_freq.frequency > 0, "Should at least collect one step or episode."
 
         if self.use_sde:
@@ -455,24 +462,28 @@ class OffPolicyAlgorithm(BaseAlgorithm):
         callback.on_rollout_start()
         continue_training = True
 
+        episode_reward, episode_timesteps = [0.0] * self.num_agents, [0] * self.num_agents
         while should_collect_more_steps(train_freq, num_collected_steps, num_collected_episodes):
             done = False
-            episode_reward, episode_timesteps = 0.0, 0
 
-            while not done:
+            if self.use_sde and self.sde_sample_freq > 0 and num_collected_steps % self.sde_sample_freq == 0:
+                # Sample a new noise matrix
+                self.actor.reset_noise()
 
-                if self.use_sde and self.sde_sample_freq > 0 and num_collected_steps % self.sde_sample_freq == 0:
-                    # Sample a new noise matrix
-                    self.actor.reset_noise()
+            # Select action randomly or according to policy
+            action, buffer_actions = self._sample_action(learning_starts, action_noise)
 
-                # Select action randomly or according to policy
-                action, buffer_action = self._sample_action(learning_starts, action_noise)
+            # Rescale and perform action
+            new_obss, rewards, dones, infoss = env.step(action)
 
-                # Rescale and perform action
-                new_obs, reward, done, infos = env.step(action)
+            for env_idx, values in enumerate(zip(new_obss, rewards, dones, infoss, buffer_actions)):
+                new_obs, reward, done, infos, buffer_action = values
+
+                if type(infos) == dict:
+                    infos = [infos]
 
                 self.num_timesteps += 1
-                episode_timesteps += 1
+                episode_timesteps[env_idx] += 1
                 num_collected_steps += 1
 
                 # Give access to local variables
@@ -481,13 +492,13 @@ class OffPolicyAlgorithm(BaseAlgorithm):
                 if callback.on_step() is False:
                     return RolloutReturn(0.0, num_collected_steps, num_collected_episodes, continue_training=False)
 
-                episode_reward += reward
+                episode_reward[env_idx] += reward
 
                 # Retrieve reward and episode length if using Monitor wrapper
                 self._update_info_buffer(infos, done)
 
                 # Store data in replay buffer (normalized action and unnormalized observation)
-                self._store_transition(replay_buffer, buffer_action, new_obs, reward, done, infos)
+                self._store_transition(replay_buffer, buffer_action, new_obs, reward, done, infos, env_idx=env_idx)
 
                 self._update_current_progress_remaining(self.num_timesteps, self._total_timesteps)
 
@@ -500,18 +511,18 @@ class OffPolicyAlgorithm(BaseAlgorithm):
                 if not should_collect_more_steps(train_freq, num_collected_steps, num_collected_episodes):
                     break
 
-            if done:
-                num_collected_episodes += 1
-                self._episode_num += 1
-                episode_rewards.append(episode_reward)
-                total_timesteps.append(episode_timesteps)
+                if done:
+                    num_collected_episodes += 1
+                    self._episode_num += 1
+                    episode_rewards.append(episode_reward[env_idx])
+                    total_timesteps.append(episode_timesteps[env_idx])
 
-                if action_noise is not None:
-                    action_noise.reset()
+                    if action_noise is not None:
+                        action_noise.reset()
 
-                # Log training infos
-                if log_interval is not None and self._episode_num % log_interval == 0:
-                    self._dump_logs()
+                    # Log training infos
+                    if log_interval is not None and self._episode_num % log_interval == 0:
+                        self._dump_logs()
 
         mean_reward = np.mean(episode_rewards) if num_collected_episodes > 0 else 0.0
 
