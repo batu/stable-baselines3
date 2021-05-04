@@ -237,6 +237,12 @@ class MonitorMulti(gym.Wrapper):
             # raise RuntimeError("Tried to step environment that needs reset")
 
         observations, rewards, dones, infos = self.env.step(action)
+
+        updated_dim = False
+        if observations.ndim == 1:
+            updated_dim = True
+            observations, rewards, dones, infos = [observations], [rewards], [dones], infos
+
         for idx, stepreturn in enumerate(zip(observations, rewards, dones, infos)):
             observation, reward, done, info = stepreturn
             self.rewards[idx].append(reward)
@@ -257,6 +263,8 @@ class MonitorMulti(gym.Wrapper):
                 info["episode"] = ep_info
                 self.rewards[idx].clear()
             self.total_steps += 1
+        if updated_dim:
+            observations, rewards, dones, infos = observations[0], rewards[0], dones[0], infos
         return observations, rewards, dones, infos
 
     def close(self) -> None:

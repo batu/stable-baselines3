@@ -396,7 +396,7 @@ class OffPolicyAlgorithm(BaseAlgorithm):
             reward_ = self._vec_normalize_env.get_original_reward()
         else:
             # Avoid changing the original ones
-            self._last_original_obs, new_obs_, reward_ = self._last_obs, new_obs, reward
+            self._last_original_obs, new_obs_, reward_ = self._last_obs[env_idx], new_obs, reward
 
         # As the VecEnv resets automatically, new_obs is already the
         # first observation of the next episode
@@ -408,12 +408,8 @@ class OffPolicyAlgorithm(BaseAlgorithm):
         else:
             next_obs = new_obs_
 
-        if env_idx is not None:
-            replay_buffer.add(self._last_original_obs[env_idx], next_obs, buffer_action, reward_, done)
-            self._last_obs[env_idx] = new_obs
-        else:
-            replay_buffer.add(self._last_original_obs, next_obs, buffer_action, reward_, done)
-            self._last_obs = new_obs
+        replay_buffer.add(self._last_original_obs, next_obs, buffer_action, reward_, done)
+        self._last_obs[env_idx] = new_obs
 
         
         # Save the unnormalized observation
@@ -464,7 +460,6 @@ class OffPolicyAlgorithm(BaseAlgorithm):
 
         episode_reward, episode_timesteps = [0.0] * self.num_agents, [0] * self.num_agents
         while should_collect_more_steps(train_freq, num_collected_steps, num_collected_episodes):
-            done = False
 
             if self.use_sde and self.sde_sample_freq > 0 and num_collected_steps % self.sde_sample_freq == 0:
                 # Sample a new noise matrix

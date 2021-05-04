@@ -47,7 +47,7 @@ class MultiAgentVecEnv(VecEnv):
         if rews.ndim == 0:
             obses, rews, dones, infos = [obses], [rews], [dones], infos
 
-        obses = np.squeeze(np.array(obses))   
+        # obses = np.squeeze(np.array(obses))   
         for env_idx in range(self.num_envs):
             obs, self.buf_rews[env_idx], self.buf_dones[env_idx], self.buf_infos[env_idx] = obses[env_idx], rews[env_idx], dones[env_idx], infos[env_idx] 
 
