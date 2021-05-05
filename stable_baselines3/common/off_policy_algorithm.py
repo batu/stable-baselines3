@@ -133,7 +133,7 @@ class OffPolicyAlgorithm(BaseAlgorithm):
         self.remove_time_limit_termination = remove_time_limit_termination
 
         # Save train freq parameter, will be converted later to TrainFreq object
-        self.train_freq = train_freq
+        self.train_freq = train_freq * self.num_agents
 
         self.actor = None  # type: Optional[th.nn.Module]
         self.replay_buffer = None  # type: Optional[ReplayBuffer]
@@ -497,15 +497,6 @@ class OffPolicyAlgorithm(BaseAlgorithm):
 
                 self._update_current_progress_remaining(self.num_timesteps, self._total_timesteps)
 
-                # For DQN, check if the target network should be updated
-                # and update the exploration schedule
-                # For SAC/TD3, the update is done as the same time as the gradient update
-                # see https://github.com/hill-a/stable-baselines/issues/900
-                self._on_step()
-
-                if not should_collect_more_steps(train_freq, num_collected_steps, num_collected_episodes):
-                    break
-
                 if done:
                     num_collected_episodes += 1
                     self._episode_num += 1
@@ -518,6 +509,16 @@ class OffPolicyAlgorithm(BaseAlgorithm):
                     # Log training infos
                     if log_interval is not None and self._episode_num % log_interval == 0:
                         self._dump_logs()
+
+            # For DQN, check if the target network should be updated
+            # and update the exploration schedule
+            # For SAC/TD3, the update is done as the same time as the gradient update
+            # see https://github.com/hill-a/stable-baselines/issues/900
+            self._on_step()
+
+            if not should_collect_more_steps(train_freq, num_collected_steps, num_collected_episodes):
+                break
+
 
         mean_reward = np.mean(episode_rewards) if num_collected_episodes > 0 else 0.0
 
