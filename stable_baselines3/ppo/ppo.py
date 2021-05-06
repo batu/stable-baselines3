@@ -1,6 +1,11 @@
 import warnings
 from typing import Any, Dict, Optional, Type, Union
 
+try:
+    from rlnav.logging import WANDBMonitor
+except
+    from RLAgency.rlnav.logging import WANDBMonitor
+
 import numpy as np
 import torch as th
 from gym import spaces
@@ -142,8 +147,12 @@ class PPO(OnPolicyAlgorithm):
         self.clip_range_vf = clip_range_vf
         self.target_kl = target_kl
 
+
         if _init_setup_model:
             self._setup_model()
+
+        global logger
+        logger = WANDBMonitor.WANDB_logger
 
     def _setup_model(self) -> None:
         super(PPO, self)._setup_model()
