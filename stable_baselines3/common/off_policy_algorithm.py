@@ -8,7 +8,6 @@ import gym
 import numpy as np
 import torch as th
 
-from stable_baselines3.common import logger
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.buffers import ReplayBuffer
 from stable_baselines3.common.callbacks import BaseCallback
@@ -18,6 +17,7 @@ from stable_baselines3.common.save_util import load_from_pkl, save_to_pkl
 from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, RolloutReturn, Schedule, TrainFreq, TrainFrequencyUnit
 from stable_baselines3.common.utils import safe_mean, should_collect_more_steps
 from stable_baselines3.common.vec_env import VecEnv
+from stable_baselines3.common import logger
 
 
 class OffPolicyAlgorithm(BaseAlgorithm):
@@ -248,7 +248,7 @@ class OffPolicyAlgorithm(BaseAlgorithm):
         self,
         total_timesteps: int,
         callback: MaybeCallback = None,
-        log_interval: int = 4,
+        log_interval: int = None,
         eval_env: Optional[GymEnv] = None,
         eval_freq: int = -1,
         n_eval_episodes: int = 5,

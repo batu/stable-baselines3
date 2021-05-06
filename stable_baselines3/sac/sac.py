@@ -12,6 +12,7 @@ from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Schedul
 from stable_baselines3.common.utils import polyak_update
 from stable_baselines3.sac.policies import SACPolicy
 
+from rlnav.logging import WANDBMonitor
 
 class SAC(OffPolicyAlgorithm):
     """
@@ -132,6 +133,9 @@ class SAC(OffPolicyAlgorithm):
         self.ent_coef = ent_coef
         self.target_update_interval = target_update_interval
         self.ent_coef_optimizer = None
+
+        global logger
+        logger = WANDBMonitor.WANDB_logger
 
         if _init_setup_model:
             self._setup_model()

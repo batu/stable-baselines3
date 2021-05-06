@@ -6,6 +6,7 @@ import numpy as np
 import torch as th
 
 from stable_baselines3.common import logger
+
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.buffers import RolloutBuffer
 from stable_baselines3.common.callbacks import BaseCallback
@@ -206,7 +207,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         self,
         total_timesteps: int,
         callback: MaybeCallback = None,
-        log_interval: int = 1,
+        log_interval: int = None,
         eval_env: Optional[GymEnv] = None,
         eval_freq: int = -1,
         n_eval_episodes: int = 5,
