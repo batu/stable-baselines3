@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Type, Union
 
 try:
     from rlnav.logging import WANDBMonitor
-except
+except:
     from RLAgency.rlnav.logging import WANDBMonitor
 
 import numpy as np

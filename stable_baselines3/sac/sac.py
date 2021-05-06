@@ -14,7 +14,7 @@ from stable_baselines3.sac.policies import SACPolicy
 
 try:
     from rlnav.logging import WANDBMonitor
-except
+except:
     from RLAgency.rlnav.logging import WANDBMonitor
 
 class SAC(OffPolicyAlgorithm):
