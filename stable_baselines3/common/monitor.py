@@ -216,7 +216,7 @@ class MonitorMulti(gym.Wrapper):
                 "Tried to reset an environment before done. If you want to allow early resets, "
                 "wrap your env with Monitor(env, path, allow_early_resets=True)"
             )
-        self.rewards = [[]] * 20
+        self.rewards = [list() for _ in range(8)]
         self.needs_reset = False
         for key in self.reset_keywords:
             value = kwargs.get(key)

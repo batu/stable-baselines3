@@ -458,7 +458,7 @@ class OffPolicyAlgorithm(BaseAlgorithm):
         callback.on_rollout_start()
         continue_training = True
 
-        episode_reward, episode_timesteps = [0.0] * self.num_agents, [0] * self.num_agents
+        episode_reward, episode_timesteps = [0.0 for _ in range(self.num_agents)], [0.0 for _ in range(self.num_agents)]
         while should_collect_more_steps(train_freq, num_collected_steps, num_collected_episodes):
 
             if self.use_sde and self.sde_sample_freq > 0 and num_collected_steps % self.sde_sample_freq == 0:
