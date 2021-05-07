@@ -1,9 +1,10 @@
 import warnings
 from typing import Any, Dict, Optional, Type, Union
+from collections import defaultdict, deque
 
 try:
     from rlnav.logging import WANDBMonitor
-except:
+except ImportError:
     from RLAgency.rlnav.logging import WANDBMonitor
 
 import numpy as np
@@ -153,6 +154,9 @@ class PPO(OnPolicyAlgorithm):
 
         global logger
         logger = WANDBMonitor.WANDB_logger
+        
+        self.max_value = -np.inf
+        self.min_value = np.inf
 
     def _setup_model(self) -> None:
         super(PPO, self)._setup_model()
@@ -199,6 +203,13 @@ class PPO(OnPolicyAlgorithm):
 
                 values, log_prob, entropy = self.policy.evaluate_actions(rollout_data.observations, actions)
                 values = values.flatten()
+                
+                np_values = values.detach().cpu().numpy()
+                self.max_value = max(self.max_value, np.max(np_values))
+                self.min_value = min(self.min_value, np.min(np_values))
+                mean_value, std_value = np.mean(np_values), np.std(np_values) 
+
+
                 # Normalize advantage
                 advantages = rollout_data.advantages
                 advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
@@ -258,15 +269,18 @@ class PPO(OnPolicyAlgorithm):
         explained_var = explained_variance(self.rollout_buffer.values.flatten(), self.rollout_buffer.returns.flatten())
 
         # Logs
+        logger.record("value/Explained Variance", explained_var)
+        logger.record("value/Max Value Pred",   self.max_value)
+        logger.record("value/Min Value Pred", self.min_value)
+        logger.record("value/Mean-Std Value Pred", (mean_value, std_value))
+        if hasattr(self.policy, "log_std"):
+            logger.record("train/std", th.exp(self.policy.log_std).mean().item())
         logger.record("train/entropy_loss", np.mean(entropy_losses))
         logger.record("train/policy_gradient_loss", np.mean(pg_losses))
         logger.record("train/value_loss", np.mean(value_losses))
         logger.record("train/approx_kl", np.mean(approx_kl_divs))
         logger.record("train/clip_fraction", np.mean(clip_fractions))
         logger.record("train/loss", loss.item())
-        logger.record("train/explained_variance", explained_var)
-        if hasattr(self.policy, "log_std"):
-            logger.record("train/std", th.exp(self.policy.log_std).mean().item())
 
         logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
         logger.record("train/clip_range", clip_range)
@@ -277,7 +291,7 @@ class PPO(OnPolicyAlgorithm):
         self,
         total_timesteps: int,
         callback: MaybeCallback = None,
-        log_interval: int = 1,
+        log_interval: int = None,
         eval_env: Optional[GymEnv] = None,
         eval_freq: int = -1,
         n_eval_episodes: int = 5,

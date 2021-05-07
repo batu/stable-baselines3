@@ -14,7 +14,7 @@ from stable_baselines3.sac.policies import SACPolicy
 
 try:
     from rlnav.logging import WANDBMonitor
-except:
+except ImportError:
     from RLAgency.rlnav.logging import WANDBMonitor
 
 class SAC(OffPolicyAlgorithm):
@@ -278,7 +278,7 @@ class SAC(OffPolicyAlgorithm):
         self,
         total_timesteps: int,
         callback: MaybeCallback = None,
-        log_interval: int = 4,
+        log_interval: int = None,
         eval_env: Optional[GymEnv] = None,
         eval_freq: int = -1,
         n_eval_episodes: int = 5,
