@@ -18,7 +18,10 @@ from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Rollout
 from stable_baselines3.common.utils import safe_mean, should_collect_more_steps
 from stable_baselines3.common.vec_env import VecEnv
 from stable_baselines3.common import logger
-
+try:
+    from rlnav.logging import WANDBMonitor
+except ImportError:
+    from RLAgency.rlnav.logging import WANDBMonitor
 
 class OffPolicyAlgorithm(BaseAlgorithm):
     """
@@ -522,6 +525,14 @@ class OffPolicyAlgorithm(BaseAlgorithm):
 
 
         mean_reward = np.mean(episode_rewards) if num_collected_episodes > 0 else 0.0
+
+                
+        mean_success_rate = np.mean(WANDBMonitor.successes)
+        if self.num_timesteps > 800000 and mean_success_rate > WANDBMonitor.max_success_rate:
+            WANDBMonitor.max_success_rate = mean_success_rate
+            self.save(WANDBMonitor.dirpath / f"best_{WANDBMonitor.max_success_rate:.3%}.zip")
+            print(f"New best model saved with {WANDBMonitor.max_success_rate:.3%}")
+
 
         callback.on_rollout_end()
 
