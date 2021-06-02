@@ -11,7 +11,7 @@ import torch as th
 
 from stable_baselines3.common import logger
 from stable_baselines3.common.base_class import BaseAlgorithm
-from stable_baselines3.common.buffers import ReplayBuffer
+from stable_baselines3.common.buffers import DictReplayBuffer, ReplayBuffer
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.noise import ActionNoise
 from stable_baselines3.common.policies import BasePolicy
@@ -629,6 +629,8 @@ class OffPolicyAlgorithm(BaseAlgorithm):
                     # Log training infos
                     if log_interval is not None and self._episode_num % log_interval == 0:
                         self._dump_logs()
+
+        # mean_reward = np.mean(episode_rewards) if num_collected_episodes > 0 else 0.0
 
         # mean_reward = np.mean(episode_rewards) if num_collected_episodes > 0 else 0.0
         callback.on_rollout_end()
