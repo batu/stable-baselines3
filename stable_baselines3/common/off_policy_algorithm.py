@@ -21,6 +21,11 @@ from stable_baselines3.common.utils import safe_mean, should_collect_more_steps
 from stable_baselines3.common.vec_env import VecEnv
 from stable_baselines3.her.her_replay_buffer import HerReplayBuffer
 
+# try:
+#     from rlnav.logging import WANDBMonitor
+# except ImportError:
+#     from RLAgency.rlnav.logging import WANDBMonitor
+
 
 class OffPolicyAlgorithm(BaseAlgorithm):
     """
@@ -630,9 +635,7 @@ class OffPolicyAlgorithm(BaseAlgorithm):
                     if log_interval is not None and self._episode_num % log_interval == 0:
                         self._dump_logs()
 
-        # mean_reward = np.mean(episode_rewards) if num_collected_episodes > 0 else 0.0
 
-        # mean_reward = np.mean(episode_rewards) if num_collected_episodes > 0 else 0.0
         callback.on_rollout_end()
 
         return RolloutReturn(0.0, num_collected_steps, num_collected_episodes, continue_training)        
