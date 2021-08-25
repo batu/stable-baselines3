@@ -13,6 +13,9 @@ from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Schedul
 from stable_baselines3.common.utils import polyak_update
 from stable_baselines3.sac.policies import SACPolicy
 
+# tracing
+
+
 try:
     from rlnav.logging import WANDBMonitor
 except ImportError:
@@ -145,6 +148,7 @@ class SAC(OffPolicyAlgorithm):
         self.target_update_interval = target_update_interval
         self.ent_coef_optimizer = None
 
+
         global logger
         logger = WANDBMonitor.WANDB_logger
 
@@ -250,6 +254,7 @@ class SAC(OffPolicyAlgorithm):
             # Compute critic loss
             critic_loss = 0.5 * sum([F.mse_loss(current_q, target_q_values) for current_q in current_q_values])
             critic_losses.append(critic_loss.item())
+
 
             # Optimize the critic
             self.critic.optimizer.zero_grad()

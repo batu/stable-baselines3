@@ -21,6 +21,8 @@ from stable_baselines3.common.utils import safe_mean, should_collect_more_steps
 from stable_baselines3.common.vec_env import VecEnv
 from stable_baselines3.her.her_replay_buffer import HerReplayBuffer
 
+
+from torch.profiler import tensorboard_trace_handler
 # try:
 #     from rlnav.logging import WANDBMonitor
 # except ImportError:
@@ -158,6 +160,12 @@ class OffPolicyAlgorithm(BaseAlgorithm):
             self.policy_kwargs["use_sde"] = self.use_sde
         # For gSDE only
         self.use_sde_at_warmup = use_sde_at_warmup
+
+        self.profiler = th.profiler.profile(activities=[
+            th.profiler.ProfilerActivity.CPU,
+            th.profiler.ProfilerActivity.CUDA,
+          ], on_trace_ready=tensorboard_trace_handler("wandb/latest-run/tbprofile"), with_stack=True)
+
 
     def _convert_train_freq(self) -> None:
         """
@@ -355,25 +363,28 @@ class OffPolicyAlgorithm(BaseAlgorithm):
 
         callback.on_training_start(locals(), globals())
 
-        while self.num_timesteps < total_timesteps:
-            rollout = self.collect_rollouts(
-                self.env,
-                train_freq=self.train_freq,
-                action_noise=self.action_noise,
-                callback=callback,
-                learning_starts=self.learning_starts,
-                replay_buffer=self.replay_buffer,
-                log_interval=log_interval,
-            )
+        with self.profiler as p:
+            while self.num_timesteps < total_timesteps:
+                rollout = self.collect_rollouts(
+                    self.env,
+                    train_freq=self.train_freq,
+                    action_noise=self.action_noise,
+                    callback=callback,
+                    learning_starts=self.learning_starts,
+                    replay_buffer=self.replay_buffer,
+                    log_interval=log_interval,
+                )
 
-            if rollout.continue_training is False:
-                break
+                if rollout.continue_training is False:
+                    break
 
-            if self.num_timesteps > 0 and self.num_timesteps > self.learning_starts:
-                # If no `gradient_steps` is specified,
-                # do as many gradients steps as steps performed during the rollout
-                gradient_steps = self.gradient_steps if self.gradient_steps > 0 else rollout.episode_timesteps
-                self.train(batch_size=self.batch_size, gradient_steps=gradient_steps)
+                if self.num_timesteps > 0 and self.num_timesteps > self.learning_starts:
+                    # If no `gradient_steps` is specified,
+                    # do as many gradients steps as steps performed during the rollout
+                    p.step()
+                    gradient_steps = self.gradient_steps if self.gradient_steps > 0 else rollout.episode_timesteps
+                    self.train(batch_size=self.batch_size, gradient_steps=gradient_steps)
+
 
         callback.on_training_end()
 
