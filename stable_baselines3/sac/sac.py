@@ -274,6 +274,9 @@ class SAC(OffPolicyAlgorithm):
                 polyak_update(self.critic.parameters(), self.critic_target.parameters(), self.tau)
 
         self._n_updates += gradient_steps
+        # with open("observation505_fixed.npy", "wb") as f:
+        #     np.save(f, self.replay_buffer.observations)
+        #     exit("Done saving at line 279")
 
         logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
         logger.record("train/ent_coef", np.mean(ent_coefs))
