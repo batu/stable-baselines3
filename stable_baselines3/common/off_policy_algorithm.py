@@ -363,27 +363,27 @@ class OffPolicyAlgorithm(BaseAlgorithm):
 
         callback.on_training_start(locals(), globals())
 
-        with self.profiler as p:
-            while self.num_timesteps < total_timesteps:
-                rollout = self.collect_rollouts(
-                    self.env,
-                    train_freq=self.train_freq,
-                    action_noise=self.action_noise,
-                    callback=callback,
-                    learning_starts=self.learning_starts,
-                    replay_buffer=self.replay_buffer,
-                    log_interval=log_interval,
-                )
+        # with self.profiler as p:
+        while self.num_timesteps < total_timesteps:
+            rollout = self.collect_rollouts(
+                self.env,
+                train_freq=self.train_freq,
+                action_noise=self.action_noise,
+                callback=callback,
+                learning_starts=self.learning_starts,
+                replay_buffer=self.replay_buffer,
+                log_interval=log_interval,
+            )
 
-                if rollout.continue_training is False:
-                    break
+            if rollout.continue_training is False:
+                break
 
-                if self.num_timesteps > 0 and self.num_timesteps > self.learning_starts:
-                    # If no `gradient_steps` is specified,
-                    # do as many gradients steps as steps performed during the rollout
-                    p.step()
-                    gradient_steps = self.gradient_steps if self.gradient_steps > 0 else rollout.episode_timesteps
-                    self.train(batch_size=self.batch_size, gradient_steps=gradient_steps)
+            if self.num_timesteps > 0 and self.num_timesteps > self.learning_starts:
+                # If no `gradient_steps` is specified,
+                # do as many gradients steps as steps performed during the rollout
+                # p.step()
+                gradient_steps = self.gradient_steps if self.gradient_steps > 0 else rollout.episode_timesteps
+                self.train(batch_size=self.batch_size, gradient_steps=gradient_steps)
 
 
         callback.on_training_end()
