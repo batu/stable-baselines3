@@ -45,6 +45,8 @@ class FlattenExtractor(BaseFeaturesExtractor):
         self.flatten = nn.Flatten()
 
     def forward(self, observations: th.Tensor) -> th.Tensor:
+        if type(observations) == dict:
+            return observations
         return self.flatten(observations)
 
 

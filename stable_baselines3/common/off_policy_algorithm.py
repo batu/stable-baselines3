@@ -9,6 +9,7 @@ import gym
 import numpy as np
 import torch as th
 
+from stable_baselines3.common import logger
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.buffers import DictReplayBuffer, ReplayBuffer
 from stable_baselines3.common.callbacks import BaseCallback
@@ -22,10 +23,10 @@ from stable_baselines3.her.her_replay_buffer import HerReplayBuffer
 
 
 from torch.profiler import tensorboard_trace_handler
-# try:
-#     from rlnav.logging import WANDBMonitor
-# except ImportError:
-#     from RLAgency.rlnav.logging import WANDBMonitor
+try:
+    from rlnav.logging import WANDBMonitor
+except ImportError:
+    from RLAgency.rlnav.logging import WANDBMonitor
 
 
 class OffPolicyAlgorithm(BaseAlgorithm):
@@ -377,6 +378,10 @@ class OffPolicyAlgorithm(BaseAlgorithm):
             if rollout.continue_training is False:
                 break
 
+            if self.num_timesteps > 2_500_000 and WANDBMonitor.max_success_rate < 0.5:
+                print("BROKEN")
+                break
+
             if self.num_timesteps > 0 and self.num_timesteps > self.learning_starts:
                 # If no `gradient_steps` is specified,
                 # do as many gradients steps as steps performed during the rollout
@@ -450,20 +455,20 @@ class OffPolicyAlgorithm(BaseAlgorithm):
         """
         time_elapsed = time.time() - self.start_time
         fps = int(self.num_timesteps / (time_elapsed + 1e-8))
-        self.logger.record("time/episodes", self._episode_num, exclude="tensorboard")
+        logger.record("time/episodes", self._episode_num, exclude="tensorboard")
         if len(self.ep_info_buffer) > 0 and len(self.ep_info_buffer[0]) > 0:
-            self.logger.record("rollout/ep_rew_mean", safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer]))
-            self.logger.record("rollout/ep_len_mean", safe_mean([ep_info["l"] for ep_info in self.ep_info_buffer]))
-        self.logger.record("time/fps", fps)
-        self.logger.record("time/time_elapsed", int(time_elapsed), exclude="tensorboard")
-        self.logger.record("time/total timesteps", self.num_timesteps, exclude="tensorboard")
+            logger.record("rollout/ep_rew_mean", safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer]))
+            logger.record("rollout/ep_len_mean", safe_mean([ep_info["l"] for ep_info in self.ep_info_buffer]))
+        logger.record("time/fps", fps)
+        logger.record("time/time_elapsed", int(time_elapsed), exclude="tensorboard")
+        logger.record("time/total timesteps", self.num_timesteps, exclude="tensorboard")
         if self.use_sde:
-            self.logger.record("train/std", (self.actor.get_std()).mean().item())
+            logger.record("train/std", (self.actor.get_std()).mean().item())
 
         if len(self.ep_success_buffer) > 0:
-            self.logger.record("rollout/success rate", safe_mean(self.ep_success_buffer))
+            logger.record("rollout/success rate", safe_mean(self.ep_success_buffer))
         # Pass the number of timesteps for tensorboard
-        self.logger.dump(step=self.num_timesteps)
+        logger.dump(step=self.num_timesteps)
 
     def _on_step(self) -> None:
         """
@@ -510,9 +515,11 @@ class OffPolicyAlgorithm(BaseAlgorithm):
         for i, done in enumerate(dones):
             if done and infos[i].get("terminal_observation") is not None:
                 if isinstance(next_obs, dict):
-                    assert len(dones) == 1, "Dict obs does not support multi env yet"
-                    # MultiEnv not supported for dict obs yet
-                    next_obs = infos[i]["terminal_observation"]
+                    # assert len(dones) == 1, "Dict obs does not support multi env yet"
+                    # MultiEnv not supported for dict obs yet 
+                    # # ite me.
+                    for k, v in infos[i]["terminal_observation"].items():
+                         next_obs[k][i] = v
                     # VecNormalize normalizes the terminal observation
                     if self._vec_normalize_env is not None:
                         next_obs = self._vec_normalize_env.unnormalize_obs(next_obs)
@@ -521,6 +528,7 @@ class OffPolicyAlgorithm(BaseAlgorithm):
                     # VecNormalize normalizes the terminal observation
                     if self._vec_normalize_env is not None:
                         next_obs[i, :] = self._vec_normalize_env.unnormalize_obs(next_obs[i, :])
+
 
         for i in range(len(dones)):
             if isinstance(next_obs, dict):

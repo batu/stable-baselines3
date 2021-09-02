@@ -282,12 +282,12 @@ class SAC(OffPolicyAlgorithm):
         #     np.save(f, self.replay_buffer.observations)
         #     exit("Done saving at line 279")
 
-        self.logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
-        self.logger.record("train/ent_coef", np.mean(ent_coefs))
-        self.logger.record("train/actor_loss", np.mean(actor_losses))
-        self.logger.record("train/critic_loss", np.mean(critic_losses))
+        logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
+        logger.record("train/ent_coef", np.mean(ent_coefs))
+        logger.record("train/actor_loss", np.mean(actor_losses))
+        logger.record("train/critic_loss", np.mean(critic_losses))
         if len(ent_coef_losses) > 0:
-            self.logger.record("train/ent_coef_loss", np.mean(ent_coef_losses))
+            logger.record("train/ent_coef_loss", np.mean(ent_coef_losses))
 
     def learn(
         self,

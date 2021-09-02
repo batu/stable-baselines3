@@ -24,7 +24,13 @@ class MultiAgentVecEnv(VecEnv):
     def __init__(self, env_fns: Callable[[], gym.Env]):
         self.envs = [env_fns()]
         env = self.envs[0]
-        agent_count = len(env.reset())
+        obs = env.reset()
+        if type(obs) == dict:
+            for k, v in obs.items():
+                agent_count = v.shape[0]
+                break
+        else:
+            agent_count = len(obs)
     
         VecEnv.__init__(self, agent_count, env.observation_space, env.action_space)
         print("num envs in multiagentvecenv", self.num_envs)
