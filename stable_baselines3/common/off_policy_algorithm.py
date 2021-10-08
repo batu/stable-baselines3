@@ -378,9 +378,9 @@ class OffPolicyAlgorithm(BaseAlgorithm):
             if rollout.continue_training is False:
                 break
 
-            if self.num_timesteps > 2_500_000 and WANDBMonitor.max_success_rate < 0.5:
-                print("BROKEN")
-                break
+            # if self.num_timesteps > 2_500_000 and WANDBMonitor.max_success_rate < 0.5:
+            #     print("BROKEN")
+            #     break
 
             if self.num_timesteps > 0 and self.num_timesteps > self.learning_starts:
                 # If no `gradient_steps` is specified,

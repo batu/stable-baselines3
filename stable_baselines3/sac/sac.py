@@ -278,7 +278,7 @@ class SAC(OffPolicyAlgorithm):
                 polyak_update(self.critic.parameters(), self.critic_target.parameters(), self.tau)
 
         self._n_updates += gradient_steps
-        # with open("observation505_fixed.npy", "wb") as f:
+        # with open("UrbanObservation505.npy", "wb") as f:
         #     np.save(f, self.replay_buffer.observations)
         #     exit("Done saving at line 279")
 
